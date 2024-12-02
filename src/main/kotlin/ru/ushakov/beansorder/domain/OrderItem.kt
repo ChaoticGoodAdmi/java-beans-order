@@ -1,5 +1,6 @@
 package ru.ushakov.beansorder.domain
 
+import com.fasterxml.jackson.annotation.JsonIgnore
 import jakarta.persistence.*
 import java.math.BigDecimal
 import java.time.LocalDateTime
@@ -13,13 +14,17 @@ data class OrderItem(
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "order_id", nullable = false)
-    val order: Order = Order(0, "", "", listOf(), BigDecimal.ZERO, LocalDateTime.now(), OrderStatus.CREATED),
+    @JsonIgnore
+    val order: Order = Order(0, "", "", listOf(), BigDecimal.ZERO, 0, LocalDateTime.now(), OrderStatus.CREATED),
 
     @Column(nullable = false)
     val productId: String = String(),
 
     @Column(nullable = false)
-    val quantity: Int = 0
+    val quantity: Int = 0,
+
+    @Column(nullable = false)
+    val price: BigDecimal = BigDecimal.ZERO
 )
 
 enum class OrderStatus {

@@ -49,8 +49,7 @@ data class CreateOrderRequest(
     val items: List<OrderItemDTO>,
     @NotNull
     @Min(value = 0)
-    @Max(value = 1)
-    val personalLoyaltyDiscount: BigDecimal
+    val bonusPointsForPayment: Int
 )
 
 data class OrderItemDTO(

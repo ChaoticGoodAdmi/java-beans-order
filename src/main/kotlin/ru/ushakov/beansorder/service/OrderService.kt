@@ -5,7 +5,6 @@ import org.springframework.transaction.annotation.Transactional
 import ru.ushakov.beansorder.controller.*
 import ru.ushakov.beansorder.domain.Order
 import ru.ushakov.beansorder.domain.OrderItem
-import ru.ushakov.beansorder.kafka.OrderCreatedEvent
 import ru.ushakov.beansorder.kafka.OrderEventProducer
 import ru.ushakov.beansorder.repository.OrderRepository
 import java.math.BigDecimal
@@ -21,7 +20,8 @@ class OrderService(
         val order = Order(
             userId = request.userId,
             coffeeShopId = request.coffeeShopId,
-            totalCost = calculateTotalCost(request)
+            totalCost = calculateTotalCost(request),
+            bonusPointsUsed = request.bonusPointsForPayment
         )
 
         val items = request.items.map {
@@ -34,7 +34,7 @@ class OrderService(
         order.items = items
 
         val savedOrder = orderRepository.save(order)
-        orderEventProducer.sendOrderCreatedEvent(OrderCreatedEvent(order))
+        orderEventProducer.sendOrderCreatedEvent(order)
 
         return CreateOrderResponse(
             orderId = savedOrder.id,
@@ -65,7 +65,7 @@ class OrderService(
 
     private fun calculateTotalCost(request: CreateOrderRequest): BigDecimal {
         val itemListCost = request.items.sumOf { it.price * BigDecimal(it.quantity) }
-        return itemListCost - itemListCost * request.personalLoyaltyDiscount
+        return itemListCost.subtract(BigDecimal(request.bonusPointsForPayment))
     }
 
     fun getOrderById(orderId: Long): OrderResponse {

@@ -23,6 +23,9 @@ data class Order(
     @Column(nullable = false)
     val totalCost: BigDecimal = BigDecimal.ZERO,
 
+    @Column
+    val bonusPointsUsed: Int = 0,
+
     @Column(nullable = false)
     val createdAt: LocalDateTime = LocalDateTime.now(),
 
