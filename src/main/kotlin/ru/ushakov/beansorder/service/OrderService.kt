@@ -5,6 +5,7 @@ import org.springframework.transaction.annotation.Transactional
 import ru.ushakov.beansorder.controller.*
 import ru.ushakov.beansorder.domain.Order
 import ru.ushakov.beansorder.domain.OrderItem
+import ru.ushakov.beansorder.domain.OrderStatus
 import ru.ushakov.beansorder.kafka.OrderEventProducer
 import ru.ushakov.beansorder.repository.OrderRepository
 import java.math.BigDecimal
@@ -60,7 +61,19 @@ class OrderService(
     fun getOrdersByUser(userId: String): List<OrderResponse> {
         val orders = orderRepository.findByUserId(userId)
 
-        return orders.map { order -> mapToOrderResponse(order) }
+        return orders
+            .sortedWith(
+                compareBy<Order>
+                { order ->
+                    when (order.status) {
+                        OrderStatus.READY -> 0
+                        OrderStatus.IN_PROGRESS -> 1
+                        OrderStatus.CREATED -> 2
+                        OrderStatus.DELIVERED -> 3
+                    }
+                }.thenByDescending { it.createdAt }
+            )
+            .map { order -> mapToOrderResponse(order) }
     }
 
     private fun calculateTotalCost(request: CreateOrderRequest): BigDecimal {
@@ -72,6 +85,27 @@ class OrderService(
         return orderRepository.findById(orderId)
             .orElseThrow { IllegalArgumentException("Order $orderId not found") }
             .let { mapToOrderResponse(it) }
+    }
+
+    fun getOrdersByCoffeeShop(coffeeShopId: String): Map<String, List<OrderResponse>> {
+        val coffeeShopOrders = orderRepository.findByCoffeeShopIdAndStatusNot(coffeeShopId, OrderStatus.DELIVERED)
+        val needToDeliver = coffeeShopOrders
+            .filter { it.status == OrderStatus.READY }
+            .sortedBy { it.createdAt }
+            .map { mapToOrderResponse(it) }
+        val needToFinish = coffeeShopOrders
+            .filter { it.status == OrderStatus.IN_PROGRESS }
+            .sortedBy { it.createdAt }
+            .map { mapToOrderResponse(it) }
+        val needToPrepare = coffeeShopOrders
+            .filter { it.status == OrderStatus.CREATED }
+            .sortedBy { it.createdAt }
+            .map { mapToOrderResponse(it) }
+        return mapOf(
+            "needToDeliver" to needToDeliver,
+            "needToFinish" to needToFinish,
+            "needToPrepare" to needToPrepare
+        )
     }
 
     private fun mapToOrderResponse(order: Order) = OrderResponse(

@@ -39,7 +39,8 @@ class OrderEventProducer(
             },
             totalCost = order.totalCost,
             createdAt = order.createdAt,
-            status = order.status
+            status = order.status,
+            bonusPointsUsed = order.bonusPointsUsed
         )
     }
 }
@@ -51,7 +52,8 @@ data class OrderKafkaDTO(
     val items: List<OrderItemKafkaDTO>,
     val totalCost: BigDecimal,
     val createdAt: LocalDateTime,
-    val status: OrderStatus
+    val status: OrderStatus,
+    val bonusPointsUsed: Int
 )
 
 data class OrderItemKafkaDTO(

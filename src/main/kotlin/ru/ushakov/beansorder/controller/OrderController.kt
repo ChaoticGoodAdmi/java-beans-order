@@ -34,6 +34,11 @@ class OrderController(
         return orderService.getOrdersByUser(userId)
     }
 
+    @GetMapping("/coffe-shop/{coffeeShopId}")
+    fun getOrdersByCoffeeShop(@PathVariable coffeeShopId: String): Map<String, List<OrderResponse>> {
+        return orderService.getOrdersByCoffeeShop(coffeeShopId)
+    }
+
     @GetMapping("/{orderId}")
     fun getOrderById(@PathVariable orderId: Long): OrderResponse {
         return orderService.getOrderById(orderId)
