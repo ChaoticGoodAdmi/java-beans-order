@@ -25,6 +25,12 @@ class OrderEventProducer(
         println("OrderCreatedEvent sent to Kafka: $event")
     }
 
+    fun sendOrderUpdatedEvent(order: Order) {
+        val event = objectMapper.writeValueAsString(OrderUpdatedKafkaDto(order.id, order.userId, order.status))
+        kafkaTemplate.send("OrderUpdated", event)
+        println("OrderUpdatedEvent sent to Kafka: $event")
+    }
+
     private fun toKafkaDTO(order: Order): OrderKafkaDTO {
         return OrderKafkaDTO(
             orderId = order.id,
@@ -60,6 +66,12 @@ data class OrderItemKafkaDTO(
     val productId: String,
     val quantity: Int,
     val price: BigDecimal
+)
+
+data class OrderUpdatedKafkaDto(
+    val orderId: Long,
+    val userId: String,
+    val newStatus: OrderStatus,
 )
 
 @Configuration

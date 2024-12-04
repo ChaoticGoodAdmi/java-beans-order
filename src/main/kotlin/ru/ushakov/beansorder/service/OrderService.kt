@@ -51,7 +51,7 @@ class OrderService(
 
         order.status = request.status
         orderRepository.save(order)
-
+        orderEventProducer.sendOrderUpdatedEvent(order)
         return UpdateOrderStatusResponse(
             orderId = order.id,
             status = order.status
