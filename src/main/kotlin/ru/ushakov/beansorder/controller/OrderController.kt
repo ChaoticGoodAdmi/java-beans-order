@@ -1,6 +1,5 @@
 package ru.ushakov.beansorder.controller
 
-import jakarta.validation.constraints.Max
 import jakarta.validation.constraints.Min
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.NotEmpty
@@ -17,8 +16,12 @@ class OrderController(
     private val orderService: OrderService
 ) {
     @PostMapping
-    fun createOrder(@RequestBody request: CreateOrderRequest): CreateOrderResponse {
-        return orderService.createOrder(request)
+    fun createOrder(
+        @RequestHeader(name = "X-UserId", required = true) @NotBlank userId: String,
+        @RequestHeader(name = "X-CoffeeShopId", required = true) @NotBlank coffeeShopId: String,
+        @RequestBody request: CreateOrderRequest
+    ): CreateOrderResponse {
+        return orderService.createOrder(userId, coffeeShopId, request)
     }
 
     @PutMapping("/{orderId}/status")
@@ -29,27 +32,28 @@ class OrderController(
         return orderService.updateOrderStatus(orderId, request)
     }
 
-    @GetMapping("/user/{userId}")
-    fun getOrdersByUser(@PathVariable userId: String): List<OrderResponse> {
+    @GetMapping("/user")
+    fun getOrdersByUser(@RequestHeader(name = "X-UserId", required = true) userId: String): List<OrderResponse> {
         return orderService.getOrdersByUser(userId)
     }
 
-    @GetMapping("/coffee-shop/{coffeeShopId}")
-    fun getOrdersByCoffeeShop(@PathVariable coffeeShopId: String): Map<String, List<OrderResponse>> {
+    @GetMapping("/coffee-shop")
+    fun getOrdersByCoffeeShop(
+        @RequestHeader(name = "X-CoffeeShopId", required = true) @NotBlank coffeeShopId: String
+    ): Map<String, List<OrderResponse>> {
         return orderService.getOrdersByCoffeeShop(coffeeShopId)
     }
 
     @GetMapping("/{orderId}")
-    fun getOrderById(@PathVariable orderId: Long): OrderResponse {
-        return orderService.getOrderById(orderId)
+    fun getOrderById(
+        @RequestHeader(name = "X-UserId", required = true) @NotBlank userId: String,
+        @PathVariable orderId: Long
+    ): OrderResponse {
+        return orderService.getOrderById(orderId, userId)
     }
 }
 
 data class CreateOrderRequest(
-    @NotBlank
-    val userId: String,
-    @NotBlank
-    val coffeeShopId: String,
     @NotEmpty
     val items: List<OrderItemDTO>,
     @NotNull

@@ -17,10 +17,10 @@ class OrderService(
 ) {
 
     @Transactional
-    fun createOrder(request: CreateOrderRequest): CreateOrderResponse {
+    fun createOrder(userId: String, coffeeShopId: String, request: CreateOrderRequest): CreateOrderResponse {
         val order = Order(
-            userId = request.userId,
-            coffeeShopId = request.coffeeShopId,
+            userId = userId,
+            coffeeShopId = coffeeShopId,
             totalCost = calculateTotalCost(request),
             bonusPointsUsed = request.bonusPointsForPayment
         )
@@ -81,10 +81,12 @@ class OrderService(
         return itemListCost.subtract(BigDecimal(request.bonusPointsForPayment))
     }
 
-    fun getOrderById(orderId: Long): OrderResponse {
+    fun getOrderById(orderId: Long, userId: String): OrderResponse {
         return orderRepository.findById(orderId)
             .orElseThrow { IllegalArgumentException("Order $orderId not found") }
-            .let { mapToOrderResponse(it) }
+            .takeIf { it.userId == userId }
+            ?.let { mapToOrderResponse(it) }
+            ?: throw IllegalArgumentException("Access denied: Order $orderId does not belong to user $userId")
     }
 
     fun getOrdersByCoffeeShop(coffeeShopId: String): Map<String, List<OrderResponse>> {
