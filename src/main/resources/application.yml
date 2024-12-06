@@ -28,7 +28,25 @@ spring:
       properties:
         spring.json.trusted.packages: "*"
 
-loyalty:
-  service-url: ${LOYALTY_SERVICE_URL:beans-order-psql}
 server:
   port: 8003
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+  endpoint:
+    prometheus:
+      access: unrestricted
+  metrics:
+    tags:
+      application: "beans-order"
+    distribution:
+      percentiles-histogram:
+        all: true
+        http.server.requests: true

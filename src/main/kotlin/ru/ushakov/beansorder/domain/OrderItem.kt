@@ -15,7 +15,7 @@ data class OrderItem(
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "order_id", nullable = false)
     @JsonIgnore
-    val order: Order = Order(0, "", "", listOf(), BigDecimal.ZERO, 0, LocalDateTime.now(), OrderStatus.CREATED),
+    val order: Order = Order(0, "", "", listOf(), BigDecimal.ZERO, 0, LocalDateTime.now(), LocalDateTime.now(), OrderStatus.CREATED),
 
     @Column(nullable = false)
     val productId: String = String(),

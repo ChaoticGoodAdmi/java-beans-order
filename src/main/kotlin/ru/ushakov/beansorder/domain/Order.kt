@@ -29,6 +29,9 @@ data class Order(
     @Column(nullable = false)
     val createdAt: LocalDateTime = LocalDateTime.now(),
 
+    @Column(nullable = true)
+    var finishedAt: LocalDateTime = LocalDateTime.now(),
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     var status: OrderStatus = OrderStatus.CREATED

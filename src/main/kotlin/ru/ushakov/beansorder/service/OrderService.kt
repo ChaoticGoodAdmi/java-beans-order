@@ -1,5 +1,8 @@
 package ru.ushakov.beansorder.service
 
+import io.micrometer.core.instrument.MeterRegistry
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import ru.ushakov.beansorder.controller.*
@@ -9,15 +12,21 @@ import ru.ushakov.beansorder.domain.OrderStatus
 import ru.ushakov.beansorder.kafka.OrderEventProducer
 import ru.ushakov.beansorder.repository.OrderRepository
 import java.math.BigDecimal
+import java.time.Duration
+import java.time.LocalDateTime
+import java.util.concurrent.TimeUnit
 
 @Service
-class OrderService(
+open class OrderService(
     private val orderRepository: OrderRepository,
-    private val orderEventProducer: OrderEventProducer
+    private val orderEventProducer: OrderEventProducer,
+    private val meterRegistry: MeterRegistry
 ) {
 
+    private val logger: Logger = LoggerFactory.getLogger(OrderService::class.java)
+
     @Transactional
-    fun createOrder(userId: String, coffeeShopId: String, request: CreateOrderRequest): CreateOrderResponse {
+    open fun createOrder(userId: String, coffeeShopId: String, request: CreateOrderRequest): CreateOrderResponse {
         val order = Order(
             userId = userId,
             coffeeShopId = coffeeShopId,
@@ -37,6 +46,9 @@ class OrderService(
         val savedOrder = orderRepository.save(order)
         orderEventProducer.sendOrderCreatedEvent(order)
 
+        meterRegistry.summary("order.average.check", "coffeeShopId", coffeeShopId)
+            .record(order.totalCost.toDouble())
+
         return CreateOrderResponse(
             orderId = savedOrder.id,
             status = savedOrder.status,
@@ -45,11 +57,16 @@ class OrderService(
     }
 
     @Transactional
-    fun updateOrderStatus(orderId: Long, request: UpdateOrderStatusRequest): UpdateOrderStatusResponse {
+    open fun updateOrderStatus(orderId: Long, request: UpdateOrderStatusRequest): UpdateOrderStatusResponse {
         val order = orderRepository.findById(orderId)
             .orElseThrow { IllegalArgumentException("Order with ID $orderId not found") }
 
         order.status = request.status
+        if (request.status == OrderStatus.DELIVERED) {
+            order.finishedAt = LocalDateTime.now()
+            val duration = Duration.between(order.createdAt, order.finishedAt)
+            meterRegistry.timer("order.execution.time", "coffeeShopId", order.coffeeShopId).record(duration)
+        }
         orderRepository.save(order)
         orderEventProducer.sendOrderUpdatedEvent(order)
         return UpdateOrderStatusResponse(

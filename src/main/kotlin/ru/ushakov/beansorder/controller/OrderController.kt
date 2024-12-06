@@ -17,10 +17,11 @@ class OrderController(
 ) {
     @PostMapping
     fun createOrder(
-        @RequestHeader(name = "X-UserId", required = true) @NotBlank userId: String,
-        @RequestHeader(name = "X-CoffeeShopId", required = true) @NotBlank coffeeShopId: String,
+        @RequestHeader(name = "X-UserId", required = true) userId: String,
+        @RequestHeader(name = "X-CoffeeShopId", required = true) coffeeShopId: String,
         @RequestBody request: CreateOrderRequest
     ): CreateOrderResponse {
+        check(coffeeShopId.isNotBlank()) { "User is not attached to any coffee-shops" }
         return orderService.createOrder(userId, coffeeShopId, request)
     }
 
@@ -39,14 +40,14 @@ class OrderController(
 
     @GetMapping("/coffee-shop")
     fun getOrdersByCoffeeShop(
-        @RequestHeader(name = "X-CoffeeShopId", required = true) @NotBlank coffeeShopId: String
+        @RequestHeader(name = "X-CoffeeShopId", required = true) coffeeShopId: String
     ): Map<String, List<OrderResponse>> {
         return orderService.getOrdersByCoffeeShop(coffeeShopId)
     }
 
     @GetMapping("/{orderId}")
     fun getOrderById(
-        @RequestHeader(name = "X-UserId", required = true) @NotBlank userId: String,
+        @RequestHeader(name = "X-UserId", required = true) userId: String,
         @PathVariable orderId: Long
     ): OrderResponse {
         return orderService.getOrderById(orderId, userId)
