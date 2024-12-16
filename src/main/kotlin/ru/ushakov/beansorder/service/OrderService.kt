@@ -3,6 +3,9 @@ package ru.ushakov.beansorder.service
 import io.micrometer.core.instrument.MeterRegistry
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import org.springframework.cache.annotation.CacheEvict
+import org.springframework.cache.annotation.Cacheable
+import org.springframework.cache.annotation.Caching
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import ru.ushakov.beansorder.controller.*
@@ -14,7 +17,6 @@ import ru.ushakov.beansorder.repository.OrderRepository
 import java.math.BigDecimal
 import java.time.Duration
 import java.time.LocalDateTime
-import java.util.concurrent.TimeUnit
 
 @Service
 open class OrderService(
@@ -26,7 +28,7 @@ open class OrderService(
     private val logger: Logger = LoggerFactory.getLogger(OrderService::class.java)
 
     @Transactional
-    open fun createOrder(userId: String, coffeeShopId: String, request: CreateOrderRequest): CreateOrderResponse {
+    fun createOrder(userId: String, coffeeShopId: String, request: CreateOrderRequest): CreateOrderResponse {
         val order = Order(
             userId = userId,
             coffeeShopId = coffeeShopId,
@@ -57,7 +59,13 @@ open class OrderService(
     }
 
     @Transactional
-    open fun updateOrderStatus(orderId: Long, request: UpdateOrderStatusRequest): UpdateOrderStatusResponse {
+    @Caching(
+        evict = [
+            CacheEvict(cacheNames = ["userOrders"], key = "#order.userId"),
+            CacheEvict(cacheNames = ["orders"], key = "#orderId")
+        ]
+    )
+    fun updateOrderStatus(orderId: Long, request: UpdateOrderStatusRequest): UpdateOrderStatusResponse {
         val order = orderRepository.findById(orderId)
             .orElseThrow { IllegalArgumentException("Order with ID $orderId not found") }
 
@@ -75,7 +83,9 @@ open class OrderService(
         )
     }
 
+    @Cacheable(value = ["userOrders"], key = "#userId")
     fun getOrdersByUser(userId: String): List<OrderResponse> {
+        logger.info("Getting user orders by user id {}", userId)
         val orders = orderRepository.findByUserId(userId)
 
         return orders
@@ -93,17 +103,19 @@ open class OrderService(
             .map { order -> mapToOrderResponse(order) }
     }
 
-    private fun calculateTotalCost(request: CreateOrderRequest): BigDecimal {
-        val itemListCost = request.items.sumOf { it.price * BigDecimal(it.quantity) }
-        return itemListCost.subtract(BigDecimal(request.bonusPointsForPayment))
-    }
-
+    @Cacheable(value = ["orders"], key = "#orderId")
     fun getOrderById(orderId: Long, userId: String): OrderResponse {
+        logger.info("Getting order by id {}", orderId)
         return orderRepository.findById(orderId)
             .orElseThrow { IllegalArgumentException("Order $orderId not found") }
             .takeIf { it.userId == userId }
             ?.let { mapToOrderResponse(it) }
             ?: throw IllegalArgumentException("Access denied: Order $orderId does not belong to user $userId")
+    }
+
+    private fun calculateTotalCost(request: CreateOrderRequest): BigDecimal {
+        val itemListCost = request.items.sumOf { it.price * BigDecimal(it.quantity) }
+        return itemListCost.subtract(BigDecimal(request.bonusPointsForPayment))
     }
 
     fun getOrdersByCoffeeShop(coffeeShopId: String): Map<String, List<OrderResponse>> {

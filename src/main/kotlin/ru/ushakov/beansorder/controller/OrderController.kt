@@ -7,6 +7,7 @@ import jakarta.validation.constraints.NotNull
 import org.springframework.web.bind.annotation.*
 import ru.ushakov.beansorder.service.OrderService
 import ru.ushakov.beansorder.domain.OrderStatus
+import java.io.Serializable
 import java.math.BigDecimal
 import java.time.LocalDateTime
 
@@ -93,9 +94,9 @@ data class OrderResponse(
     val items: List<OrderItemResponse>,
     val createdAt: String,
     val status: OrderStatus
-)
+) : Serializable
 
 data class OrderItemResponse(
     val productId: String,
     val quantity: Int
-)
+) : Serializable

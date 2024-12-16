@@ -1,6 +1,8 @@
 spring:
   application:
     name: beans-order
+  cache:
+    type: redis
   datasource:
     url: jdbc:postgresql://${DB_HOST:beans-order-psql}:${DB_PORT:5432}/${DB_NAME:order_db}
     username: ${DB_USER:postgres}
@@ -27,6 +29,11 @@ spring:
       value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
       properties:
         spring.json.trusted.packages: "*"
+  data:
+    redis:
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT}
+      password: ${REDIS_PASSWORD}
 
 server:
   port: 8003

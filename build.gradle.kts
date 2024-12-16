@@ -36,6 +36,9 @@ dependencies {
 	implementation("io.micrometer:micrometer-registry-prometheus")
 	implementation("io.micrometer:micrometer-core")
 
+	implementation("org.springframework.boot:spring-boot-starter-cache")
+	implementation("org.springframework.boot:spring-boot-starter-data-redis")
+
 	runtimeOnly("org.postgresql:postgresql")
 
 	testImplementation("org.springframework.boot:spring-boot-starter-test")

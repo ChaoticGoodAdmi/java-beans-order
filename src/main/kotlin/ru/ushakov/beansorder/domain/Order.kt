@@ -5,8 +5,12 @@ import java.math.BigDecimal
 import java.time.LocalDateTime
 
 @Entity
-@Table(name = "orders")
+@Table(
+    name = "orders",
+    indexes = [Index(name = "idx_userId", columnList = "userId")]
+)
 data class Order(
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long = 0,
