@@ -61,7 +61,7 @@ open class OrderService(
     @Transactional
     @Caching(
         evict = [
-            CacheEvict(cacheNames = ["userOrders"], key = "#order.userId"),
+            CacheEvict(cacheNames = ["userOrders"], allEntries = true),
             CacheEvict(cacheNames = ["orders"], key = "#orderId")
         ]
     )
